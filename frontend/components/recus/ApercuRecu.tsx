@@ -51,7 +51,7 @@ export default function ApercuRecu({ recu, eleve, isDuplicate, onFermer }: Props
   const classe = classes.find((c) => c.id === eleve.classeId)?.libelle ?? eleve.classeId;
   const annee = anneesScolaires.find((a) => a.id === eleve.anneeScolaireId)?.nom ?? eleve.anneeScolaireId;
   const nomComptable = recu.comptableId;
-  const motif = `Scolarité — ${LIBELLE_TRANCHE[recu.tranche] ?? recu.tranche}`;
+  const motif = LIBELLE_TRANCHE[recu.tranche] ?? recu.tranche;
   const solde = recu.soldeRestant;
 
   const frais = fraisParClasse.find(
@@ -122,7 +122,6 @@ export default function ApercuRecu({ recu, eleve, isDuplicate, onFermer }: Props
               <th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;text-align:left;">Classe</th>
               <th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;text-align:left;">Tranche</th>
               <th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;text-align:right;">Montant</th>
-              <th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;text-align:right;">Reste tranche</th>
               <th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;text-align:right;">Reste annuel</th>
             </tr>
           </thead>
@@ -134,14 +133,12 @@ export default function ApercuRecu({ recu, eleve, isDuplicate, onFermer }: Props
               <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;">${classe}</td>
               <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;">${motif}</td>
               <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:right;font-weight:600;">${formatGNF(recu.montantVerse)}</td>
-              <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:right;color:#dc2626;font-weight:600;">${formatGNF(recu.soldeRestant)}</td>
               <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:right;color:#b45309;font-weight:600;">${formatGNF(resteAnnuel)}</td>
             </tr>
             <!-- Ligne Total -->
             <tr style="background:#f8f8f8;font-weight:700;">
               <td colspan="5" style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:right;">Total</td>
               <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:right;color:#1B6B3A;">${formatGNF(recu.montantVerse)}</td>
-              <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:right;color:#dc2626;">${formatGNF(recu.soldeRestant)}</td>
               <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:right;color:#b45309;">${formatGNF(resteAnnuel)}</td>
             </tr>
           </tbody>
@@ -272,7 +269,6 @@ export default function ApercuRecu({ recu, eleve, isDuplicate, onFermer }: Props
                 <th className="border border-[#145a30] px-3 py-2 text-left text-xs font-semibold">Classe</th>
                 <th className="border border-[#145a30] px-3 py-2 text-left text-xs font-semibold">Tranche</th>
                 <th className="border border-[#145a30] px-3 py-2 text-right text-xs font-semibold">Montant</th>
-                <th className="border border-[#145a30] px-3 py-2 text-right text-xs font-semibold">Reste tranche</th>
                 <th className="border border-[#145a30] px-3 py-2 text-right text-xs font-semibold">Reste annuel</th>
               </tr>
             </thead>
@@ -284,14 +280,12 @@ export default function ApercuRecu({ recu, eleve, isDuplicate, onFermer }: Props
                 <td className="border border-gray-200 px-3 py-2.5 text-xs">{classe}</td>
                 <td className="border border-gray-200 px-3 py-2.5 text-xs">{motif}</td>
                 <td className="border border-gray-200 px-3 py-2.5 text-xs text-right font-semibold text-[#1B6B3A]">{formatGNF(recu.montantVerse)}</td>
-                <td className="border border-gray-200 px-3 py-2.5 text-xs text-right font-semibold text-red-600">{formatGNF(solde)}</td>
                 <td className="border border-gray-200 px-3 py-2.5 text-xs text-right font-semibold text-orange-600">{formatGNF(resteAnnuel)}</td>
               </tr>
               {/* Ligne Total */}
               <tr className="bg-gray-50 font-bold">
                 <td colSpan={5} className="border border-gray-200 px-3 py-2 text-xs text-right font-bold text-gray-700">Total</td>
                 <td className="border border-gray-200 px-3 py-2 text-xs text-right font-bold text-[#1B6B3A]">{formatGNF(recu.montantVerse)}</td>
-                <td className="border border-gray-200 px-3 py-2 text-xs text-right font-bold text-red-600">{formatGNF(solde)}</td>
                 <td className="border border-gray-200 px-3 py-2 text-xs text-right font-bold text-orange-600">{formatGNF(resteAnnuel)}</td>
               </tr>
             </tbody>
