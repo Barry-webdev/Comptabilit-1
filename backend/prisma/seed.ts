@@ -33,10 +33,43 @@ async function main() {
   });
   console.log(`✅ Année scolaire ${annee.nom} créée`);
 
-  // ── Utilisateurs ──────────────────────────────────────────────────────
-  const motDePasseAdmin = await bcrypt.hash('admin123', 10);
-  const motDePasseComptable = await bcrypt.hash('comptable123', 10);
+  // ── Nettoyage données de test ─────────────────────────────────────────
+  const eleveTest = await prisma.eleve.findFirst({ where: { matricule: 'TEST-001' } });
+  if (eleveTest) {
+    await prisma.recu.deleteMany({ where: { eleveId: eleveTest.id } });
+    await prisma.paiement.deleteMany({ where: { eleveId: eleveTest.id } });
+    await prisma.eleve.delete({ where: { id: eleveTest.id } });
+    console.log('🧹 Élève de test TEST-001 supprimé');
+  }
+  await prisma.recette.deleteMany({ where: { libelle: { contains: 'Test' } } });
+  await prisma.depense.deleteMany({ where: { motif: { contains: 'Test' } } });
+  await prisma.utilisateur.deleteMany({ where: { identifiant: 'test.comptable' } });
 
+  // ── Nettoyage frais ajoutés par les tests ─────────────────────────────
+  // Supprimer tous les frais existants pour repartir propre
+  const fraisExistants = await prisma.fraisClasse.count();
+  if (fraisExistants > 0) {
+    await prisma.fraisClasse.deleteMany({});
+    console.log(`🧹 ${fraisExistants} entrée(s) de frais supprimée(s)`);
+  }
+
+  // ── Utilisateurs ──────────────────────────────────────────────────────
+  // Supprimer les comptables de test (garder seulement admin)
+  const utilisateursTest = await prisma.utilisateur.findMany({
+    where: {
+      AND: [
+        { identifiant: { not: 'admin' } },
+        { identifiant: { not: 'comptable' } },
+      ]
+    }
+  });
+  for (const u of utilisateursTest) {
+    await prisma.utilisateur.delete({ where: { id: u.id } });
+    console.log(`🧹 Utilisateur de test supprimé : ${u.identifiant}`);
+  }
+
+  // Créer/mettre à jour l'admin
+  const motDePasseAdmin = await bcrypt.hash('admin123', 10);
   await prisma.utilisateur.upsert({
     where: { identifiant: 'admin' },
     update: {},
@@ -49,23 +82,14 @@ async function main() {
     },
   });
 
-  await prisma.utilisateur.upsert({
-    where: { identifiant: 'comptable' },
-    update: {},
-    create: {
-      nom: 'Konaté',
-      prenom: 'Ibrahima',
-      identifiant: 'comptable',
-      motDePasse: motDePasseComptable,
-      role: 'comptable',
-    },
-  });
-  console.log('✅ Utilisateurs créés (admin / comptable)');
+  // Supprimer le comptable par défaut — l'admin le créera lui-même
+  await prisma.utilisateur.deleteMany({ where: { identifiant: 'comptable' } });
+  console.log('🧹 Comptable par défaut supprimé (à recréer depuis les paramètres)');
 
+  console.log('✅ Utilisateur admin créé');
   console.log('\n🎉 Base de données initialisée avec succès !');
-  console.log('📋 Identifiants :');
-  console.log('   Administratrice : admin / admin123');
-  console.log('   Comptable       : comptable / comptable123');
+  console.log('📋 Identifiant admin : admin / admin123');
+  console.log('ℹ️  Créez vos comptables depuis Paramètres → Utilisateurs');
 }
 
 main()
