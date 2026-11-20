@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: gsab-backend
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma db push && npx ts-node prisma/seed.ts && node dist/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gsab-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: PORT
+        value: 4000
+      - key: FRONTEND_URL
+        value: https://votre-frontend.vercel.app
+
+databases:
+  - name: gsab-db
+    databaseName: gsab_db
+    user: gsab_user
+    region: frankfurt
+    plan: free
