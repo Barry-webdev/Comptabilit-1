@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Utilisateurs ─────────────────────────────────────────────────────────────
+
+model Utilisateur {
+  id          String   @id @default(cuid())
+  nom         String
+  prenom      String
+  identifiant String   @unique
+  motDePasse  String
+  role        Role
+  actif       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  paiements   Paiement[]
+  depenses    Depense[]
+  recettes    Recette[]
+  recus       Recu[]
+
+  @@map("utilisateurs")
+}
+
+enum Role {
+  administratrice
+  comptable
+}
+
+// ── Années scolaires ──────────────────────────────────────────────────────────
+
+model AnneeScolaire {
+  id        String        @id @default(cuid())
+  nom       String        @unique
+  statut    StatutAnnee   @default(cloturee)
+  createdAt DateTime      @default(now())
+
+  eleves       Eleve[]
+  fraisClasses FraisClasse[]
+  paiements    Paiement[]
+  recus        Recu[]
+
+  @@map("annees_scolaires")
+}
+
+enum StatutAnnee {
+  active
+  cloturee
+}
+
+// ── Classes ───────────────────────────────────────────────────────────────────
+
+model Classe {
+  id        String   @id @default(cuid())
+  libelle   String   @unique
+  createdAt DateTime @default(now())
+
+  eleves       Eleve[]
+  fraisClasses FraisClasse[]
+
+  @@map("classes")
+}
+
+// ── Frais scolaires ───────────────────────────────────────────────────────────
+
+model FraisClasse {
+  id              String        @id @default(cuid())
+  classeId        String
+  anneeScolaireId String
+  totalAnnuel     Int
+  t1Montant       Int
+  t1DateLimite    String
+  t2Montant       Int
+  t2DateLimite    String
+  t3Montant       Int
+  t3DateLimite    String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  classe        Classe        @relation(fields: [classeId], references: [id])
+  anneeScolaire AnneeScolaire @relation(fields: [anneeScolaireId], references: [id])
+
+  @@unique([classeId, anneeScolaireId])
+  @@map("frais_classes")
+}
+
+// ── Élèves ────────────────────────────────────────────────────────────────────
+
+model Eleve {
+  id              String   @id @default(cuid())
+  matricule       String   @unique
+  nom             String
+  prenom          String
+  classeId        String
+  anneeScolaireId String
+  contactParent   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  classe        Classe        @relation(fields: [classeId], references: [id])
+  anneeScolaire AnneeScolaire @relation(fields: [anneeScolaireId], references: [id])
+  paiements     Paiement[]
+  recus         Recu[]
+
+  @@map("eleves")
+}
+
+// ── Paiements ─────────────────────────────────────────────────────────────────
+
+model Paiement {
+  id              String   @id @default(cuid())
+  eleveId         String
+  tranche         Tranche
+  montant         Int
+  date            String
+  comptableId     String
+  anneeScolaireId String
+  createdAt       DateTime @default(now())
+
+  eleve         Eleve         @relation(fields: [eleveId], references: [id])
+  comptable     Utilisateur   @relation(fields: [comptableId], references: [id])
+  anneeScolaire AnneeScolaire @relation(fields: [anneeScolaireId], references: [id])
+  recu          Recu?
+
+  @@map("paiements")
+}
+
+enum Tranche {
+  tranche1
+  tranche2
+  tranche3
+}
+
+// ── Reçus ─────────────────────────────────────────────────────────────────────
+
+model Recu {
+  id              String   @id @default(cuid())
+  numero          String   @unique
+  eleveId         String
+  paiementId      String   @unique
+  date            DateTime @default(now())
+  montantVerse    Int
+  soldeRestant    Int
+  tranche         Tranche
+  anneeScolaireId String
+  comptableId     String
+  isDuplicate     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  eleve         Eleve         @relation(fields: [eleveId], references: [id])
+  paiement      Paiement      @relation(fields: [paiementId], references: [id])
+  anneeScolaire AnneeScolaire @relation(fields: [anneeScolaireId], references: [id])
+  comptable     Utilisateur   @relation(fields: [comptableId], references: [id])
+
+  @@map("recus")
+}
+
+// ── Recettes ──────────────────────────────────────────────────────────────────
+
+model Recette {
+  id        String       @id @default(cuid())
+  date      String
+  type      TypeRecette
+  categorie String
+  libelle   String
+  montant   Int
+  agentId   String
+  eleveId   String?
+  createdAt DateTime     @default(now())
+
+  agent Utilisateur @relation(fields: [agentId], references: [id])
+
+  @@map("recettes")
+}
+
+enum TypeRecette {
+  scolaire
+  annexe
+}
+
+// ── Dépenses ──────────────────────────────────────────────────────────────────
+
+model Depense {
+  id                   String   @id @default(cuid())
+  date                 String
+  categorie            String
+  motif                String
+  beneficiaire         String
+  montant              Int
+  referenceJustificatif String?
+  agentId              String
+  createdAt            DateTime @default(now())
+
+  agent Utilisateur @relation(fields: [agentId], references: [id])
+
+  @@map("depenses")
+}

@@ -1,0 +1,30 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "id": "B-1",
+      "criterion": 6,
+      "file": "components/rapports/BoutonExportPdf.tsx",
+      "description": "PDFDownloadLink de @react-pdf/renderer n'est pas utilisé. L'implémentation emploie reactPdf.pdf(...).toBlob() + un <a> caché, ce qui ne respecte pas l'API prescrite par le critère 6.",
+      "consequence": "Le critère d'acceptation nommé (PDFDownloadLink) n'est pas satisfait.",
+      "correction": "Utiliser PDFDownloadLink de @react-pdf/renderer chargé dynamiquement (dynamic + ssr:false), ou obtenir une dérogation de l'approbateur."
+    },
+    {
+      "id": "B-2",
+      "criterion": 7,
+      "file": "components/rapports/BoutonExportPdf.tsx, app/(protected)/rapports/page.tsx",
+      "description": "next/dynamic avec ssr:false n'est utilisé nulle part dans le module rapports. Les composants PDF sont importés via import() inline dans un callback async, ce qui est SSR-safe en pratique mais ne satisfait pas l'exigence littérale du critère 7.",
+      "consequence": "Le critère d'acceptation nommé (dynamic + ssr:false) n'est pas satisfait.",
+      "correction": "Charger chaque composant PDF avec dynamic(() => import('@/components/rapports/PdfXxx'), { ssr: false }), ou obtenir une dérogation de l'approbateur."
+    },
+    {
+      "id": "B-3",
+      "criterion": 4,
+      "file": "app/(protected)/rapports/page.tsx (ligne 630), components/rapports/PdfAnnuel.tsx (ligne 85)",
+      "description": "Dans RapportAnnuel, categoriesMap itère sur le tableau depenses brut (tout le store) sans filtrer par l'année scolaire sélectionnée. La section 'Dépenses totales par catégorie' additionne les dépenses de toutes les années scolaires quelle que soit la sélection.",
+      "consequence": "Le comptable voit des totaux de catégories gonflés dès qu'il existe des dépenses sur plusieurs années scolaires, rendant la section incorrecte.",
+      "correction": "Filtrer depenses sur la plage de dates de l'année scolaire sélectionnée (en utilisant moisAnneeScolaire déjà calculé) avant de construire categoriesMap, dans page.tsx et PdfAnnuel.tsx."
+    }
+  ],
+  "reviewDoc": "C:\\Users\\Abdoul Razzaï Barry\\Desktop\\Comptabilité\\frontend\\.agents\\tasks\\gsb-modules\\review-module4.md"
+}
