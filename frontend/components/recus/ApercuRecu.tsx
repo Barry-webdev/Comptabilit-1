@@ -50,7 +50,9 @@ export default function ApercuRecu({ recu, eleve, isDuplicate, onFermer }: Props
 
   const classe = classes.find((c) => c.id === eleve.classeId)?.libelle ?? eleve.classeId;
   const annee = anneesScolaires.find((a) => a.id === eleve.anneeScolaireId)?.nom ?? eleve.anneeScolaireId;
-  const nomComptable = recu.comptableId;
+  const nomComptable = recu.comptable
+    ? `${recu.comptable.prenom} ${recu.comptable.nom}`
+    : recu.comptableId;
   const motif = LIBELLE_TRANCHE[recu.tranche] ?? recu.tranche;
   const solde = recu.soldeRestant;
 
@@ -144,17 +146,15 @@ export default function ApercuRecu({ recu, eleve, isDuplicate, onFermer }: Props
           </tbody>
         </table>
 
-        <!-- Pied : comptable + signature + cachet -->
-        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;">
-          <div style="font-size:9px;color:#555;">
-            <div>Comptable : <strong>${nomComptable}</strong></div>
-            <div style="margin-top:16px;border-top:1px solid #999;width:120px;padding-top:3px;">Signature du comptable</div>
+        <!-- Pied : Parent/Tuteur à gauche, Comptable + signature à droite -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;padding-top:8px;border-top:1px solid #e5e7eb;">
+          <div style="text-align:left;">
+            <div style="font-size:10px;font-weight:700;color:#444;margin-bottom:14px;">Parent / Tuteur</div>
+            <div style="border-top:1px solid #999;width:160px;padding-top:3px;font-size:9px;color:#555;">Signature du Parent / Tuteur</div>
           </div>
-          <div style="font-size:10px;font-weight:600;color:#444;">Parent / Tuteur</div>
-          <div style="text-align:center;">
-            <div style="width:70px;height:70px;border:1px dashed #bbb;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-              <span style="font-size:8px;color:#bbb;text-align:center;">Cachet<br/>établissement</span>
-            </div>
+          <div style="text-align:right;">
+            <div style="font-size:9px;color:#555;margin-bottom:14px;">Comptable : <strong>${nomComptable}</strong></div>
+            <div style="border-top:1px solid #999;width:160px;padding-top:3px;font-size:9px;color:#555;margin-left:auto;">Signature du comptable</div>
           </div>
         </div>
       </div>
@@ -292,30 +292,22 @@ export default function ApercuRecu({ recu, eleve, isDuplicate, onFermer }: Props
           </table>
         </div>
 
-        {/* Pied — date, comptable, signatures */}
+        {/* Pied — Parent/Tuteur gauche, Comptable droite, sans cachet */}
         <div className="border-t border-gray-100 bg-gray-50 px-6 py-4">
           <div className="flex justify-between text-xs text-gray-500 mb-4">
             <span>Date : <strong className="text-gray-800">{formatDate(recu.date)}</strong></span>
             <span>Année scolaire : <strong className="text-gray-800">{annee}</strong></span>
-            <span>Comptable : <strong className="text-gray-800">{nomComptable}</strong></span>
           </div>
-          <div className="flex items-end gap-4">
+          <div className="flex items-end justify-between gap-4">
+            {/* Parent / Tuteur — gauche */}
             <div className="flex-1">
-              <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
-                Signature du comptable
-              </p>
-              <div className="h-9 rounded-lg border border-dashed border-gray-300 bg-white" />
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-14 h-14 rounded-full border border-dashed border-gray-300 bg-white flex items-center justify-center">
-                <span className="text-[8px] text-gray-300 text-center leading-tight">Cachet<br/>étab.</span>
-              </div>
-            </div>
-            <div className="flex-1 text-right">
               <p className="text-xs font-bold text-gray-700 mb-1">Parent / Tuteur</p>
               <div className="h-9 rounded-lg border border-dashed border-gray-300 bg-white" />
+              <p className="text-[9px] text-gray-400 mt-1">Signature du Parent / Tuteur</p>
             </div>
-            <div className="flex items-center gap-2 shrink-0 ml-2">
+
+            {/* Boutons — centre */}
+            <div className="flex items-center gap-2 shrink-0">
               {onFermer && (
                 <Button variant="secondary" size="sm" onClick={onFermer}>
                   Fermer
@@ -324,6 +316,15 @@ export default function ApercuRecu({ recu, eleve, isDuplicate, onFermer }: Props
               <Button size="sm" onClick={imprimer}>
                 🖨 Imprimer
               </Button>
+            </div>
+
+            {/* Comptable — droite */}
+            <div className="flex-1 text-right">
+              <p className="text-[9px] text-gray-500 mb-1">
+                Comptable : <strong className="text-gray-800">{nomComptable}</strong>
+              </p>
+              <div className="h-9 rounded-lg border border-dashed border-gray-300 bg-white" />
+              <p className="text-[9px] text-gray-400 mt-1">Signature du comptable</p>
             </div>
           </div>
         </div>

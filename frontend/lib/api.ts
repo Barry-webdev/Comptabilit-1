@@ -68,6 +68,7 @@ export interface IRecu {
   anneeScolaireId: string;
   comptableId: string;
   isDuplicate?: boolean;
+  comptable?: { nom: string; prenom: string };
 }
 
 export interface IRecette {
