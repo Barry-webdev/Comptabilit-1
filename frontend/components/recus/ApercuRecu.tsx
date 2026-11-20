@@ -113,33 +113,33 @@ export default function ApercuRecu({ recu, eleve, isDuplicate, onFermer }: Props
         ${duplicataHtml}
 
         <!-- Tableau principal -->
-        <table style="width:100%;border-collapse:collapse;border:1px solid #ccc;flex:1;">
+        <table style="width:100%;border-collapse:collapse;border:1px solid #ccc;">
           <thead>
             <tr style="background:#1B6B3A;color:#fff;">
-              <th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;text-align:left;">Code</th>
-              <th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;text-align:left;">Matricule</th>
-              <th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;text-align:left;">Élève</th>
-              <th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;text-align:left;">Classe</th>
-              <th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;text-align:left;">Tranche</th>
-              <th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;text-align:right;">Montant</th>
-              <th style="padding:5px 6px;border:1px solid #aaa;font-size:10px;text-align:right;">Reste annuel</th>
+              <th style="padding:4px 6px;border:1px solid #aaa;font-size:10px;text-align:left;">Code</th>
+              <th style="padding:4px 6px;border:1px solid #aaa;font-size:10px;text-align:left;">Matricule</th>
+              <th style="padding:4px 6px;border:1px solid #aaa;font-size:10px;text-align:left;">Élève</th>
+              <th style="padding:4px 6px;border:1px solid #aaa;font-size:10px;text-align:left;">Classe</th>
+              <th style="padding:4px 6px;border:1px solid #aaa;font-size:10px;text-align:left;">Tranche</th>
+              <th style="padding:4px 6px;border:1px solid #aaa;font-size:10px;text-align:right;">Montant</th>
+              <th style="padding:4px 6px;border:1px solid #aaa;font-size:10px;text-align:right;">Reste annuel</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;">${recu.numero}</td>
-              <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;font-family:monospace;">${eleve.matricule}</td>
-              <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;font-weight:600;">${eleve.prenom} ${eleve.nom}</td>
-              <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;">${classe}</td>
-              <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;">${motif}</td>
-              <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:right;font-weight:600;">${formatGNF(recu.montantVerse)}</td>
-              <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:right;color:#b45309;font-weight:600;">${formatGNF(resteAnnuel)}</td>
+              <td style="padding:3px 6px;border:1px solid #ddd;font-size:10px;">${recu.numero}</td>
+              <td style="padding:3px 6px;border:1px solid #ddd;font-size:10px;font-family:monospace;">${eleve.matricule}</td>
+              <td style="padding:3px 6px;border:1px solid #ddd;font-size:10px;font-weight:600;">${eleve.prenom} ${eleve.nom}</td>
+              <td style="padding:3px 6px;border:1px solid #ddd;font-size:10px;">${classe}</td>
+              <td style="padding:3px 6px;border:1px solid #ddd;font-size:10px;">${motif}</td>
+              <td style="padding:3px 6px;border:1px solid #ddd;font-size:10px;text-align:right;font-weight:600;">${formatGNF(recu.montantVerse)}</td>
+              <td style="padding:3px 6px;border:1px solid #ddd;font-size:10px;text-align:right;color:#b45309;font-weight:600;">${formatGNF(resteAnnuel)}</td>
             </tr>
             <!-- Ligne Total -->
             <tr style="background:#f8f8f8;font-weight:700;">
-              <td colspan="5" style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:right;">Total</td>
-              <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:right;color:#1B6B3A;">${formatGNF(recu.montantVerse)}</td>
-              <td style="padding:5px 6px;border:1px solid #ddd;font-size:10px;text-align:right;color:#b45309;">${formatGNF(resteAnnuel)}</td>
+              <td colspan="5" style="padding:3px 6px;border:1px solid #ddd;font-size:10px;text-align:right;">Total</td>
+              <td style="padding:3px 6px;border:1px solid #ddd;font-size:10px;text-align:right;color:#1B6B3A;">${formatGNF(recu.montantVerse)}</td>
+              <td style="padding:3px 6px;border:1px solid #ddd;font-size:10px;text-align:right;color:#b45309;">${formatGNF(resteAnnuel)}</td>
             </tr>
           </tbody>
         </table>
