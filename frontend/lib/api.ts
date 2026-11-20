@@ -114,7 +114,7 @@ export interface IUtilisateur {
 import { useAuthStore } from '@/store/auth-store';
 
 // BASE_URL pointe vers le backend Express
-const BASE_URL = 'http://localhost:4000/api';
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000') + '/api';
 
 // Token stocké sous la clé 'gsab-token' dans localStorage
 async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> {
