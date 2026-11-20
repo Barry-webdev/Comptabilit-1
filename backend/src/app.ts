@@ -16,6 +16,7 @@ import recettesRoutes from './routes/recettes.routes';
 import depensesRoutes from './routes/depenses.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import utilisateursRoutes from './routes/utilisateurs.routes';
+import adminRoutes from './routes/admin.routes';
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/recettes', recettesRoutes);
 app.use('/api/depenses', depensesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/utilisateurs', utilisateursRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Route de santé
 app.get('/api/health', (_req, res) => {
