@@ -7,7 +7,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import Skeleton from '@/components/ui/Skeleton';
 import ErrorMessage from '@/components/ui/ErrorMessage';
 import FormulaireEleve from '@/components/eleves/FormulaireEleve';
 import ImportEleves from '@/components/eleves/ImportEleves';
@@ -66,7 +66,64 @@ export default function ElevesPage() {
     refetch();
   }
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {/* En-tête */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <Skeleton className="h-7 w-28 mb-2" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-36 rounded-xl" />
+            <Skeleton className="h-9 w-32 rounded-xl" />
+            <Skeleton className="h-9 w-28 rounded-xl" />
+          </div>
+        </div>
+
+        {/* Filtres */}
+        <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Skeleton className="h-16" />
+            <Skeleton className="h-16" />
+            <Skeleton className="h-16" />
+            <Skeleton className="h-16" />
+          </div>
+        </div>
+
+        {/* Tableau */}
+        <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-[#172B4D] text-white text-left text-xs font-semibold uppercase tracking-wide">
+                  <th className="px-4 py-3">Matricule</th>
+                  <th className="px-4 py-3">Nom</th>
+                  <th className="px-4 py-3">Prénom</th>
+                  <th className="px-4 py-3">Classe</th>
+                  <th className="px-4 py-3">Année scolaire</th>
+                  <th className="px-4 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="border-b border-[#E2E8F0]">
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-28" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-8 w-24 rounded-lg" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (error) return <ErrorMessage message={error} />;
 
   return (

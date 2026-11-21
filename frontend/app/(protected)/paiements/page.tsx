@@ -7,7 +7,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Select from '@/components/ui/Select';
 import Input from '@/components/ui/Input';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import Skeleton from '@/components/ui/Skeleton';
 import ErrorMessage from '@/components/ui/ErrorMessage';
 import FormulairePaiement from '@/components/paiements/FormulairePaiement';
 
@@ -70,7 +70,57 @@ export default function PaiementsPage() {
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {/* En-tête */}
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-7 w-28" />
+          <Skeleton className="h-9 w-36 rounded-xl" />
+        </div>
+
+        {/* Filtres */}
+        <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Skeleton className="h-16" />
+            <Skeleton className="h-16" />
+            <Skeleton className="h-16" />
+            <Skeleton className="h-16" />
+          </div>
+        </div>
+
+        {/* Tableau */}
+        <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[#172B4D]">
+                <tr className="text-left text-xs font-semibold uppercase tracking-wide text-white">
+                  <th className="px-4 py-3 whitespace-nowrap">Date</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Élève</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Classe</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Tranche</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Montant</th>
+                  <th className="px-4 py-3 whitespace-nowrap">N° Reçu</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="border-b" style={{ borderColor: '#E2E8F0' }}>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (error) return <ErrorMessage message={error} />;
 
   return (

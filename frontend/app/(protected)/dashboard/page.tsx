@@ -16,7 +16,7 @@ import {
 import { formatGNF, formatDate, calculerTauxRecouvrement } from '@/lib/utils';
 import Modal from '@/components/ui/Modal';
 import FormulairePaiement from '@/components/paiements/FormulairePaiement';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import Skeleton from '@/components/ui/Skeleton';
 import ErrorMessage from '@/components/ui/ErrorMessage';
 
 const GraphiqueEvolution = dynamic(
@@ -30,13 +30,6 @@ const GraphiqueRecouvrement = dynamic(
 );
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function isSameDay(dateStr: string, ref: Date): boolean {
-  const d = new Date(dateStr);
-  return d.getFullYear() === ref.getFullYear() &&
-    d.getMonth() === ref.getMonth() &&
-    d.getDate() === ref.getDate();
-}
 
 function isSameMonth(dateStr: string, ref: Date): boolean {
   const d = new Date(dateStr);
@@ -120,6 +113,20 @@ function KpiCard({
   );
 }
 
+// ── Skeleton KPI (état de chargement) ──────────────────────────────────
+function KpiCardSkeleton() {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-[#E2E8F0] p-5 border-l-4 border-l-[#E2E8F0]">
+      <div className="flex items-start justify-between mb-3">
+        <Skeleton className="h-3 w-28" />
+        <Skeleton className="h-5 w-5 rounded" />
+      </div>
+      <Skeleton className="h-7 w-32 mb-2" />
+      <Skeleton className="h-3 w-20" />
+    </div>
+  );
+}
+
 // ── Page principale ───────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -145,17 +152,10 @@ export default function DashboardPage() {
   const maintenant = new Date();
   const anneeActive = anneesScolairesList.find((a) => a.statut === 'active');
 
-  // ── KPIs ────────────────────────────────────────────────────────────
-
-  const encaissementsJour = paiementsList
-    .filter((p) => isSameDay(p.date, maintenant))
-    .reduce((acc, p) => acc + p.montant, 0);
-
-  const encaissementsMois = paiementsList
-    .filter((p) => isSameMonth(p.date, maintenant))
-    .reduce((acc, p) => acc + p.montant, 0) +
-    recettesList.filter((r) => isSameMonth(r.date, maintenant))
-    .reduce((acc, r) => acc + r.montant, 0);
+  // ── Variations vs mois précédent (badges KPI) ──────────────────────
+  // Calculées à partir des données brutes déjà chargées pour les graphiques
+  // et le journal — aucun appel API supplémentaire. Les valeurs KPI elles-mêmes
+  // proviennent directement de useDashboardStats (un seul appel agrégé).
 
   const encaissementsMoisPrec = paiementsList
     .filter((p) => isPrevMonth(p.date, maintenant))
@@ -163,25 +163,14 @@ export default function DashboardPage() {
     recettesList.filter((r) => isPrevMonth(r.date, maintenant))
     .reduce((acc, r) => acc + r.montant, 0);
 
-  const depensesMois = depensesList
-    .filter((d) => isSameMonth(d.date, maintenant))
-    .reduce((acc, d) => acc + d.montant, 0);
-
   const depensesMoisPrec = depensesList
     .filter((d) => isPrevMonth(d.date, maintenant))
     .reduce((acc, d) => acc + d.montant, 0);
 
-  const soldeNet = encaissementsMois - depensesMois;
   const taux = calculerTauxRecouvrement(paiementsList, fraisParClasseList, elevesList);
 
-  const varEncaissements = variation(encaissementsMois, encaissementsMoisPrec);
-  const varDepenses = variation(depensesMois, depensesMoisPrec);
-
-  const nbElevesActifs = anneeActive
-    ? elevesList.filter((e) => e.anneeScolaireId === anneeActive.id).length
-    : elevesList.length;
-
-  const nbPaiementsJour = paiementsList.filter((p) => isSameDay(p.date, maintenant)).length;
+  const varEncaissements = variation(dashboardStats?.encaissementsMois ?? 0, encaissementsMoisPrec);
+  const varDepenses = variation(dashboardStats?.depensesMois ?? 0, depensesMoisPrec);
 
   // ── Alertes : élèves avec tranche en retard ─────────────────────────
 
@@ -312,25 +301,27 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* KPIs – ligne 1 : financiers */}
+      {/* KPIs – ligne 1 : financiers (issus du seul appel useDashboardStats) */}
       {statsError && <ErrorMessage message={statsError} />}
       {statsLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <div className="col-span-full"><LoadingSpinner message="Chargement des statistiques…" /></div>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <KpiCardSkeleton key={i} />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <KpiCard
             titre="Encaissements du jour"
-            valeur={formatGNF(dashboardStats?.encaissementsJour ?? encaissementsJour)}
-            sousTitre={`${nbPaiementsJour} paiement${nbPaiementsJour > 1 ? 's' : ''} aujourd'hui`}
+            valeur={formatGNF(dashboardStats?.encaissementsJour ?? 0)}
+            sousTitre={`${dashboardStats?.nbPaiementsJour ?? 0} paiement${(dashboardStats?.nbPaiementsJour ?? 0) > 1 ? 's' : ''} aujourd'hui`}
             couleurBordure="border-l-[#176B45]"
             couleurIcone="text-[#176B45]"
             icone={<IcoPaiement />}
           />
           <KpiCard
             titre="Recettes du mois"
-            valeur={formatGNF(encaissementsMois)}
+            valeur={formatGNF(dashboardStats?.encaissementsMois ?? 0)}
             couleurBordure="border-l-[#16A34A]"
             couleurIcone="text-[#16A34A]"
             icone={<IcoRecette />}
@@ -339,7 +330,7 @@ export default function DashboardPage() {
           />
           <KpiCard
             titre="Dépenses du mois"
-            valeur={formatGNF(depensesMois)}
+            valeur={formatGNF(dashboardStats?.depensesMois ?? 0)}
             couleurBordure="border-l-[#DC2626]"
             couleurIcone="text-[#DC2626]"
             icone={<IcoDepense />}
@@ -348,7 +339,7 @@ export default function DashboardPage() {
           />
           <KpiCard
             titre="Solde net du mois"
-            valeur={formatGNF(soldeNet)}
+            valeur={formatGNF(dashboardStats?.soldeNet ?? 0)}
             sousTitre={`Recouvrement global : ${taux}%`}
             couleurBordure="border-l-[#172B4D]"
             couleurIcone="text-[#172B4D]"
@@ -364,7 +355,7 @@ export default function DashboardPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-[#64748B]">Élèves actifs</p>
             <span className="text-[#D97706]"><IcoEleves /></span>
           </div>
-          <p className="text-2xl font-bold text-[#172B4D]">{nbElevesActifs}</p>
+          <p className="text-2xl font-bold text-[#172B4D]">{dashboardStats?.totalEleves ?? 0}</p>
           <p className="text-xs text-[#64748B] mt-1">{anneeActive?.nom ?? 'Aucune année active'}</p>
         </div>
 
