@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   useDashboardStats,
@@ -28,6 +28,14 @@ const GraphiqueRecouvrement = dynamic(
   () => import('@/components/dashboard/GraphiqueRecouvrement'),
   { ssr: false }
 );
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface KpiExtras {
+  varEncaissements: { pct: number; hausse: boolean };
+  varDepenses: { pct: number; hausse: boolean };
+  taux: number;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -127,19 +135,33 @@ function KpiCardSkeleton() {
   );
 }
 
-// ── Page principale ───────────────────────────────────────────────────────────
+// ── Sections détaillées (différées) ───────────────────────────────────────────
+// Les graphiques, le journal, les alertes et les échéances reposent sur les
+// listes détaillées (paiements, recettes, dépenses, classes, frais, élèves).
+// En les montant APRÈS le rendu des KPIs — qui viennent du seul appel
+// useDashboardStats — on réduit la rafale d'appels API au chargement à froid
+// (de 8 appels simultanés à 2 : stats + années scolaires), sans rien retirer.
 
-export default function DashboardPage() {
+function DashboardDetails({
+  anneeActive,
+  totalEleves,
+  encaissementsMois,
+  depensesMois,
+  onExtras,
+}: {
+  anneeActive: { id: string; nom: string } | null;
+  totalEleves: number;
+  encaissementsMois: number;
+  depensesMois: number;
+  onExtras: (extras: KpiExtras) => void;
+}) {
   const router = useRouter();
-  const { data: dashboardStats, loading: statsLoading, error: statsError } = useDashboardStats();
   const { data: paiements } = usePaiements();
   const { data: recettes } = useRecettes();
   const { data: depenses } = useDepenses();
   const { data: classes } = useClasses();
   const { data: fraisParClasse } = useFrais();
   const { data: eleves } = useEleves();
-  const { data: anneesScolaires } = useAnneesScolaires();
-  const [modalPaiement, setModalPaiement] = useState(false);
 
   const paiementsList = paiements ?? [];
   const recettesList = recettes ?? [];
@@ -147,30 +169,29 @@ export default function DashboardPage() {
   const classesList = classes ?? [];
   const fraisParClasseList = fraisParClasse ?? [];
   const elevesList = eleves ?? [];
-  const anneesScolairesList = anneesScolaires ?? [];
 
-  const maintenant = new Date();
-  const anneeActive = anneesScolairesList.find((a) => a.statut === 'active');
+  const [maintenant] = useState(() => new Date());
 
-  // ── Variations vs mois précédent (badges KPI) ──────────────────────
-  // Calculées à partir des données brutes déjà chargées pour les graphiques
-  // et le journal — aucun appel API supplémentaire. Les valeurs KPI elles-mêmes
-  // proviennent directement de useDashboardStats (un seul appel agrégé).
-
-  const encaissementsMoisPrec = paiementsList
-    .filter((p) => isPrevMonth(p.date, maintenant))
-    .reduce((acc, p) => acc + p.montant, 0) +
-    recettesList.filter((r) => isPrevMonth(r.date, maintenant))
-    .reduce((acc, r) => acc + r.montant, 0);
-
-  const depensesMoisPrec = depensesList
-    .filter((d) => isPrevMonth(d.date, maintenant))
-    .reduce((acc, d) => acc + d.montant, 0);
-
-  const taux = calculerTauxRecouvrement(paiementsList, fraisParClasseList, elevesList);
-
-  const varEncaissements = variation(dashboardStats?.encaissementsMois ?? 0, encaissementsMoisPrec);
-  const varDepenses = variation(dashboardStats?.depensesMois ?? 0, depensesMoisPrec);
+  // Variations vs mois précédent + taux de recouvrement, remontés aux KPIs.
+  useEffect(() => {
+    const pList = paiements ?? [];
+    const rList = recettes ?? [];
+    const dList = depenses ?? [];
+    const fList = fraisParClasse ?? [];
+    const eList = eleves ?? [];
+    const encaissementsMoisPrec =
+      pList.filter((p) => isPrevMonth(p.date, maintenant)).reduce((acc, p) => acc + p.montant, 0) +
+      rList.filter((r) => isPrevMonth(r.date, maintenant)).reduce((acc, r) => acc + r.montant, 0);
+    const depensesMoisPrec = dList
+      .filter((d) => isPrevMonth(d.date, maintenant))
+      .reduce((acc, d) => acc + d.montant, 0);
+    const taux = calculerTauxRecouvrement(pList, fList, eList);
+    onExtras({
+      varEncaissements: variation(encaissementsMois, encaissementsMoisPrec),
+      varDepenses: variation(depensesMois, depensesMoisPrec),
+      taux,
+    });
+  }, [paiements, recettes, depenses, fraisParClasse, eleves, encaissementsMois, depensesMois, onExtras, maintenant]);
 
   // ── Alertes : élèves avec tranche en retard ─────────────────────────
 
@@ -284,70 +305,6 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
 
-      {/* En-tête + bouton action rapide */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-[#172B4D]">Tableau de Bord</h1>
-          {anneeActive && (
-            <p className="text-sm text-[#64748B] mt-0.5">Année scolaire active : <strong>{anneeActive.nom}</strong></p>
-          )}
-        </div>
-        <button
-          onClick={() => setModalPaiement(true)}
-          className="inline-flex items-center gap-2 bg-[#176B45] hover:bg-[#0f4f31] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition shadow-sm"
-        >
-          <span className="text-lg leading-none">+</span>
-          Enregistrer un paiement
-        </button>
-      </div>
-
-      {/* KPIs – ligne 1 : financiers (issus du seul appel useDashboardStats) */}
-      {statsError && <ErrorMessage message={statsError} />}
-      {statsLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <KpiCardSkeleton key={i} />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <KpiCard
-            titre="Encaissements du jour"
-            valeur={formatGNF(dashboardStats?.encaissementsJour ?? 0)}
-            sousTitre={`${dashboardStats?.nbPaiementsJour ?? 0} paiement${(dashboardStats?.nbPaiementsJour ?? 0) > 1 ? 's' : ''} aujourd'hui`}
-            couleurBordure="border-l-[#176B45]"
-            couleurIcone="text-[#176B45]"
-            icone={<IcoPaiement />}
-          />
-          <KpiCard
-            titre="Recettes du mois"
-            valeur={formatGNF(dashboardStats?.encaissementsMois ?? 0)}
-            couleurBordure="border-l-[#16A34A]"
-            couleurIcone="text-[#16A34A]"
-            icone={<IcoRecette />}
-            variationPct={varEncaissements.pct}
-            variationHausse={varEncaissements.hausse}
-          />
-          <KpiCard
-            titre="Dépenses du mois"
-            valeur={formatGNF(dashboardStats?.depensesMois ?? 0)}
-            couleurBordure="border-l-[#DC2626]"
-            couleurIcone="text-[#DC2626]"
-            icone={<IcoDepense />}
-            variationPct={varDepenses.pct}
-            variationHausse={!varDepenses.hausse}
-          />
-          <KpiCard
-            titre="Solde net du mois"
-            valeur={formatGNF(dashboardStats?.soldeNet ?? 0)}
-            sousTitre={`Recouvrement global : ${taux}%`}
-            couleurBordure="border-l-[#172B4D]"
-            couleurIcone="text-[#172B4D]"
-            icone={<IcoSolde />}
-          />
-        </div>
-      )}
-
       {/* KPI élèves + alertes */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl shadow-sm border border-[#E2E8F0] p-5 border-l-4 border-l-[#D97706]">
@@ -355,7 +312,7 @@ export default function DashboardPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-[#64748B]">Élèves actifs</p>
             <span className="text-[#D97706]"><IcoEleves /></span>
           </div>
-          <p className="text-2xl font-bold text-[#172B4D]">{dashboardStats?.totalEleves ?? 0}</p>
+          <p className="text-2xl font-bold text-[#172B4D]">{totalEleves}</p>
           <p className="text-xs text-[#64748B] mt-1">{anneeActive?.nom ?? 'Aucune année active'}</p>
         </div>
 
@@ -496,6 +453,107 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Page principale ───────────────────────────────────────────────────────────
+
+export default function DashboardPage() {
+  const { data: dashboardStats, loading: statsLoading, error: statsError } = useDashboardStats();
+  const { data: anneesScolaires } = useAnneesScolaires();
+  const [modalPaiement, setModalPaiement] = useState(false);
+  const [detailsReady, setDetailsReady] = useState(false);
+  const [extras, setExtras] = useState<KpiExtras | null>(null);
+
+  const anneesScolairesList = anneesScolaires ?? [];
+  const anneeActive = anneesScolairesList.find((a) => a.statut === 'active') ?? null;
+
+  // Les KPIs proviennent du seul appel useDashboardStats. On ne monte les
+  // sections détaillées (et leurs 6 hooks de listes) qu'APRÈS le rendu des KPIs,
+  // pour réduire la rafale d'appels API au chargement à froid.
+  useEffect(() => {
+    if (!statsLoading) setDetailsReady(true);
+  }, [statsLoading]);
+
+  return (
+    <div className="space-y-6">
+
+      {/* En-tête + bouton action rapide */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#172B4D]">Tableau de Bord</h1>
+          {anneeActive && (
+            <p className="text-sm text-[#64748B] mt-0.5">Année scolaire active : <strong>{anneeActive.nom}</strong></p>
+          )}
+        </div>
+        <button
+          onClick={() => setModalPaiement(true)}
+          className="inline-flex items-center gap-2 bg-[#176B45] hover:bg-[#0f4f31] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition shadow-sm"
+        >
+          <span className="text-lg leading-none">+</span>
+          Enregistrer un paiement
+        </button>
+      </div>
+
+      {/* KPIs financiers (issus du seul appel useDashboardStats) */}
+      {statsError && <ErrorMessage message={statsError} />}
+      {statsLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <KpiCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <KpiCard
+            titre="Encaissements du jour"
+            valeur={formatGNF(dashboardStats?.encaissementsJour ?? 0)}
+            sousTitre={`${dashboardStats?.nbPaiementsJour ?? 0} paiement${(dashboardStats?.nbPaiementsJour ?? 0) > 1 ? 's' : ''} aujourd'hui`}
+            couleurBordure="border-l-[#176B45]"
+            couleurIcone="text-[#176B45]"
+            icone={<IcoPaiement />}
+          />
+          <KpiCard
+            titre="Recettes du mois"
+            valeur={formatGNF(dashboardStats?.encaissementsMois ?? 0)}
+            couleurBordure="border-l-[#16A34A]"
+            couleurIcone="text-[#16A34A]"
+            icone={<IcoRecette />}
+            variationPct={extras?.varEncaissements.pct}
+            variationHausse={extras?.varEncaissements.hausse}
+          />
+          <KpiCard
+            titre="Dépenses du mois"
+            valeur={formatGNF(dashboardStats?.depensesMois ?? 0)}
+            couleurBordure="border-l-[#DC2626]"
+            couleurIcone="text-[#DC2626]"
+            icone={<IcoDepense />}
+            variationPct={extras?.varDepenses.pct}
+            variationHausse={extras ? !extras.varDepenses.hausse : true}
+          />
+          <KpiCard
+            titre="Solde net du mois"
+            valeur={formatGNF(dashboardStats?.soldeNet ?? 0)}
+            sousTitre={`Recouvrement global : ${extras?.taux ?? 0}%`}
+            couleurBordure="border-l-[#172B4D]"
+            couleurIcone="text-[#172B4D]"
+            icone={<IcoSolde />}
+          />
+        </div>
+      )}
+
+      {/* Sections détaillées (élèves, alertes, graphiques, journal, échéances)
+          différées après le rendu des KPIs pour réduire la rafale au chargement */}
+      {detailsReady && (
+        <DashboardDetails
+          anneeActive={anneeActive}
+          totalEleves={dashboardStats?.totalEleves ?? 0}
+          encaissementsMois={dashboardStats?.encaissementsMois ?? 0}
+          depensesMois={dashboardStats?.depensesMois ?? 0}
+          onExtras={setExtras}
+        />
+      )}
 
       {/* Modal paiement rapide */}
       <Modal isOpen={modalPaiement} onClose={() => setModalPaiement(false)} title="Nouveau paiement" large>
