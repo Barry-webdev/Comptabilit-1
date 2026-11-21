@@ -241,3 +241,15 @@ export const utilisateursApi = {
 export const dashboardApi = {
   stats: () => apiFetch<IDashboardStats>('/dashboard/stats'),
 };
+
+export const healthApi = {
+  // Ping léger (sans auth) pour réveiller le backend Render (plan gratuit).
+  // Les erreurs sont ignorées : un serveur qui se réveille répondra au prochain ping.
+  ping: async (): Promise<void> => {
+    try {
+      await fetch(`${BASE_URL}/health`, { method: 'GET', cache: 'no-store' });
+    } catch {
+      // Serveur potentiellement en cours de réveil : on ignore l'erreur.
+    }
+  },
+};

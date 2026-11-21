@@ -2,9 +2,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { anneesApi, type IAnneeScolaire } from '@/lib/api';
 
+// Cache au niveau du module : les années scolaires changent rarement.
+// Tant que le cache a moins de 5 minutes, on retourne les données
+// sans refetcher. Invalidation manuelle via refetch().
+let cache: { data: IAnneeScolaire[]; timestamp: number } | null = null;
+const STALE_MS = 5 * 60 * 1000;
+
+function isFresh(): boolean {
+  return cache !== null && Date.now() - cache.timestamp < STALE_MS;
+}
+
 export function useAnneesScolaires() {
-  const [data, setData] = useState<IAnneeScolaire[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<IAnneeScolaire[] | null>(() => (isFresh() ? cache!.data : null));
+  const [loading, setLoading] = useState<boolean>(() => !isFresh());
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -13,6 +23,7 @@ export function useAnneesScolaires() {
     try {
       const result = await anneesApi.lister();
       setData(result);
+      cache = { data: result, timestamp: Date.now() };
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur réseau');
     } finally {
@@ -20,6 +31,10 @@ export function useAnneesScolaires() {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    if (isFresh()) return; // cache valide : pas de refetch
+    fetchData();
+  }, [fetchData]);
+
   return { data, loading, error, refetch: fetchData };
 }

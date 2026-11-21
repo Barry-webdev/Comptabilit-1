@@ -12,9 +12,19 @@ function normaliserFrais(f: IFrais): IFrais {
   };
 }
 
+// Cache au niveau du module, clé par anneeId : les frais changent rarement.
+// Tant que le cache a moins de 5 minutes, on retourne les données
+// sans refetcher. Invalidation manuelle via refetch().
+let cache: { anneeId: string | undefined; data: IFrais[]; timestamp: number } | null = null;
+const STALE_MS = 5 * 60 * 1000;
+
+function isFresh(anneeId?: string): boolean {
+  return cache !== null && cache.anneeId === anneeId && Date.now() - cache.timestamp < STALE_MS;
+}
+
 export function useFrais(anneeId?: string) {
-  const [data, setData] = useState<IFrais[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<IFrais[] | null>(() => (isFresh(anneeId) ? cache!.data : null));
+  const [loading, setLoading] = useState<boolean>(() => !isFresh(anneeId));
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -22,7 +32,9 @@ export function useFrais(anneeId?: string) {
     setError(null);
     try {
       const result = await fraisApi.lister(anneeId);
-      setData(result ? result.map(normaliserFrais) : []);
+      const normalise = result ? result.map(normaliserFrais) : [];
+      setData(normalise);
+      cache = { anneeId, data: normalise, timestamp: Date.now() };
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur réseau');
     } finally {
@@ -30,6 +42,10 @@ export function useFrais(anneeId?: string) {
     }
   }, [anneeId]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    if (isFresh(anneeId)) return; // cache valide : pas de refetch
+    fetchData();
+  }, [fetchData]);
+
   return { data, loading, error, refetch: fetchData };
 }
